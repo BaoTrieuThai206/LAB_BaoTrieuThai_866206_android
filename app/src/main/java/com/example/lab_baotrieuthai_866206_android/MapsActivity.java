@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,6 +29,7 @@ import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.maps.android.SphericalUtil;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -113,8 +116,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 private void setMarker(LatLng latLng) {
-                    MarkerOptions options = new MarkerOptions().position(latLng)
-                            .title("A");
+                    MarkerOptions options = new MarkerOptions().position(latLng);
+                    Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault());
+                    try {
+                        List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+                        if (addresses.size() > 0) {
+                            options.title(addresses.get(0).getAddressLine(0));
+                        } else {
+                            Calendar cal = Calendar.getInstance();
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd hh:mm:ss", Locale.CANADA);
+                            String savedDate = sdf.format(cal.getTime());
+                            options.title(savedDate);
+                        }
+                    } catch (IOException e) {
+                        options.title("Favorite");
+                    }
+
                     markers.add(mMap.addMarker(options));
                     addFavorite(options);
                 }
@@ -130,7 +147,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd hh:mm:ss", Locale.CANADA);
         String savedDate = sdf.format(cal.getTime());
-        String name = "Favorite";
+        String name = options.getTitle();
 
         // Insert into room db
         Favorite favorite = new Favorite(name, lat, lng, savedDate);
